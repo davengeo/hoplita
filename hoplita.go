@@ -3,16 +3,40 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
+	"log"
 )
 
+type message struct {
+
+	value interface {}
+
+}
 
 func main() {
 	router := gin.Default()
-	router.GET("/ping", func(c *gin.Context) {
+
+	msg := message{}
+
+	router.GET("/webhook", func(c *gin.Context) {
 		key := c.DefaultQuery("key", "none")
 		documentType := c.Query("document-type")
-
 		c.String(http.StatusOK, "Looking for %s %s", key, documentType)
+		msg.value = key
 	})
-	router.Run(":8081") // listen and server on 0.0.0.0:8080
+
+	go OrdersLoop(&msg)
+
+	router.Run(":8081")
+
+}
+
+
+func OrdersLoop(messages *message) {
+
+	for {
+		time.Sleep(300 * time.Millisecond)
+		log.Printf("hello:%s", messages.value)
+	}
+
 }
