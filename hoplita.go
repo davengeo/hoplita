@@ -6,42 +6,45 @@ import (
 	"log"
 )
 
-type message struct {
-	key string
-	documentType string
-	value interface {}
 
+type DataModel struct {
+	Id     string `json:"_id" binding:"required"`
+	Rev string `json:"_rev" binding:"required"`
 }
 
 func main() {
 	router := gin.Default()
 
-	msg := message{}
 
-	income := make(chan message)
+	income := make(chan DataModel)
 	go OrdersLoop(income)
 
-	router.GET("/webhook", func(c *gin.Context) {
-		key := c.DefaultQuery("key", "none")
-		documentType := c.Query("document-type")
-		c.String(http.StatusOK, "Looking for %s %s", key, documentType)
-		msg.key = key
-		msg.documentType = documentType
-		income<-msg
+	router.POST("/webhook", func(c *gin.Context) {
+
+		var dataModel DataModel
+
+		if c.Bind(&dataModel) == nil {
+			c.String(http.StatusOK, "Looking for %s %s", dataModel.Id, dataModel.Rev)
+			income<-dataModel
+		}
+
+
 	})
 
 	router.Run(":8081")
 }
 
 
-func OrdersLoop(income chan message) {
 
-	messages := message{}
+
+func OrdersLoop(income chan DataModel) {
+
+	messages := DataModel{}
 	i := int16(0)
 	for {
-		if messages.key != "" {
+		if messages.Id != "" {
 			i++
-			log.Printf("%d\n", i)
+			log.Printf("%d %s\n", i, messages.Id)
 		}
 		messages=<-income
 	}
