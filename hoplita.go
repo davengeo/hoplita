@@ -8,6 +8,7 @@ import (
 
 type message struct {
 	key string
+	documentType string
 	value interface {}
 
 }
@@ -16,7 +17,6 @@ func main() {
 	router := gin.Default()
 
 	msg := message{}
-	//var lock sync.Mutex
 
 	income := make(chan message)
 	go OrdersLoop(income)
@@ -26,7 +26,7 @@ func main() {
 		documentType := c.Query("document-type")
 		c.String(http.StatusOK, "Looking for %s %s", key, documentType)
 		msg.key = key
-		msg.value = documentType
+		msg.documentType = documentType
 		income<-msg
 	})
 
@@ -37,9 +37,11 @@ func main() {
 func OrdersLoop(income chan message) {
 
 	messages := message{}
+	i := int16(0)
 	for {
-		if messages.value != nil {
-			log.Printf("hello:%s", messages.key)
+		if messages.key != "" {
+			i++
+			log.Printf("%d\n", i)
 		}
 		messages=<-income
 	}
