@@ -16,15 +16,16 @@ type DataModel struct {
 }
 
 func main() {
-	GinEngine().Run(":8081")
+	income := make(chan DataModel)
+
+	go EventLoop(income)
+
+	GinEngine(income).Run(":8081")
 }
 
-func GinEngine() *gin.Engine {
+func GinEngine(income chan DataModel) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
-
-	income := make(chan DataModel)
-	go EventLoop(income)
 
 	router.POST("/webhook", func(c *gin.Context) {
 
