@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var income = make(chan DataModel)
+var income = make(chan Document)
 
 func TestWhether_correct_parameters_should_return_accepted(t *testing.T) {
 
@@ -34,7 +34,7 @@ func TestWhether_correct_parameters_should_return_accepted(t *testing.T) {
 func TestWhether_correct_parameters_should_propagate_to_income(t *testing.T) {
 
 	go func() {
-		message := DataModel{}
+		message := Document{}
 		message=<-income
 		assert.Equal(t, "1", message.Id)
 		assert.Equal(t, "1", message.Rev)

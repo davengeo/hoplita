@@ -7,29 +7,27 @@ import (
 )
 
 
-type DataModel struct {
+type Document struct {
 	Id  string `json:"_id" binding:"required"`
 	Rev string `json:"_rev" binding:"required"`
 	Title string `json:"title"`
-
-
 }
 
 func main() {
-	income := make(chan DataModel)
+	income := make(chan Document)
 
 	go EventLoop(income)
 
 	GinEngine(income).Run(":8081")
 }
 
-func GinEngine(income chan DataModel) *gin.Engine {
+func GinEngine(income chan Document) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 
 	router.POST("/webhook", func(c *gin.Context) {
 
-		var dataModel DataModel
+		var dataModel Document
 
 		if c.BindJSON(&dataModel) == nil {
 			c.JSON(http.StatusAccepted, gin.H{})
@@ -46,9 +44,9 @@ func GinEngine(income chan DataModel) *gin.Engine {
 
 
 
-func EventLoop(income chan DataModel) {
+func EventLoop(income chan Document) {
 
-	message := DataModel{}
+	message := Document{}
 	i := int16(0)
 	for {
 		message =<-income
