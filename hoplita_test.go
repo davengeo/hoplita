@@ -27,8 +27,6 @@ func TestWhether_correct_parameters_should_return_accepted(t *testing.T) {
 		assert.Equal(t, "{}\n", r.Body.String())
 		assert.Equal(t, http.StatusAccepted, r.Code)
 	})
-
-
 }
 
 func TestWhether_correct_parameters_should_propagate_to_income(t *testing.T) {
@@ -53,5 +51,17 @@ func TestWhether_correct_parameters_should_propagate_to_income(t *testing.T) {
 	})
 
 	time.Sleep(100 * time.Millisecond)
+}
 
+func TestWhether_bad_parameters_should_response_bad_request(t *testing.T) {
+
+	r := gofight.New()
+	r.POST("/webhook").
+	SetDebug(true).
+	SetJSON(gofight.D{
+		"no-param": "1",
+	}).
+	Run(GinEngine(income), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+		assert.Equal(t, http.StatusBadRequest, r.Code)
+	})
 }
