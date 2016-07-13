@@ -3,7 +3,8 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"log"
+	"github.com/couchbase/gocb"
+	"fmt"
 )
 
 
@@ -41,18 +42,31 @@ func GinEngine(income chan Document) *gin.Engine {
 	return router
 }
 
-
-
-
 func EventLoop(income chan Document) {
 
-	message := Document{}
-	i := int16(0)
 	for {
-		message =<-income
-		i++
-		log.Printf("%d %s\n", i, message.Id)
+		var document Document
+		document=<-income
+		go PipeLine(document)
 	}
-
 }
 
+func PipeLine(document Document) {
+	second(verify(document))
+}
+
+func verify(doc Document) <-chan Document {
+	out := make(chan Document)
+	myCluster, _ := gocb.Connect("couchbase://localhost")
+	myBucket, _ := myCluster.OpenBucket("sync_gateway", "")
+	var value interface{}
+	cas, _ := myBucket.Get(doc.Id, &value)
+	fmt.Printf("Got value `%+v` with CAS `%08x`\n", value, cas)
+	return out
+}
+
+func second(in chan Document) <-chan Document {
+	out := make(chan Document)
+	<-in
+	return out
+}
