@@ -8,45 +8,51 @@ import (
 
 
 type DataModel struct {
-	Id     string `json:"_id" binding:"required"`
+	Id  string `json:"_id" binding:"required"`
 	Rev string `json:"_rev" binding:"required"`
+	Title string `json:"title"`
+
+
 }
 
 func main() {
+	GinEngine().Run(":8081")
+}
+
+func GinEngine() *gin.Engine {
+	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 
-
 	income := make(chan DataModel)
-	go OrdersLoop(income)
+	go EventLoop(income)
 
 	router.POST("/webhook", func(c *gin.Context) {
 
 		var dataModel DataModel
 
-		if c.Bind(&dataModel) == nil {
-			c.String(http.StatusOK, "Looking for %s %s", dataModel.Id, dataModel.Rev)
+		if c.BindJSON(&dataModel) == nil {
+			c.JSON(http.StatusAccepted, gin.H{})
 			income<-dataModel
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{})
 		}
-
 
 	})
 
-	router.Run(":8081")
+	return router
 }
 
 
 
 
-func OrdersLoop(income chan DataModel) {
+func EventLoop(income chan DataModel) {
 
-	messages := DataModel{}
+	message := DataModel{}
 	i := int16(0)
 	for {
-		if messages.Id != "" {
-			i++
-			log.Printf("%d %s\n", i, messages.Id)
-		}
-		messages=<-income
+		message =<-income
+		i++
+		log.Printf("%d %s\n", i, message.Id)
 	}
 
 }
