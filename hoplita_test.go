@@ -13,6 +13,7 @@ var income = make(chan Document)
 
 func TestWhether_correct_parameters_should_return_accepted(t *testing.T) {
 
+	//in order to offer a reception to income
 	go func() { <-income }()
 
 	r := gofight.New()
@@ -64,4 +65,54 @@ func TestWhether_bad_parameters_should_response_bad_request(t *testing.T) {
 	Run(GinEngine(income), func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
 		assert.Equal(t, http.StatusBadRequest, r.Code)
 	})
+}
+
+func first(in chan Document) (chan Document, chan string) {
+	done := make(chan string)
+	close(done)
+	//done <- "" // this provokes a panic in runtime
+	return in, done
+}
+
+type pepe func() chan Document
+
+
+func second(in chan Document, done chan string, handler chan Document) (chan Document, chan string) {
+	select {
+		case <-done:
+			return in, done
+		case <-in:
+			return handler, done
+	}
+}
+
+func TestPipeLine(t *testing.T) {
+	in, err := first(income)
+	select {
+		case <-err:
+			t.Log("passed by case <-err:")
+		case <-in:
+			t.Fail()
+	}
+}
+
+
+func TestSecondPipeLine(t *testing.T) {
+	in, done := first(income)
+
+	doc:=Document{}
+
+	sec, err := second(in, done, func(doc Document) chan Document {
+		out:=make(chan Document)
+		return out
+	}(doc))
+
+
+	select {
+		case <-err:
+			t.Log("passed by case <-err:")
+		case <-sec:
+			t.Fail()
+	}
+
 }

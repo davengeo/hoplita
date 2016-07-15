@@ -14,6 +14,15 @@ type Document struct {
 	Title string `json:"title"`
 }
 
+type Error struct {
+	message interface{}
+}
+
+type ContOrError struct {
+	cont chan Document
+	error Error
+}
+
 func main() {
 	income := make(chan Document)
 
@@ -52,7 +61,7 @@ func EventLoop(income chan Document) {
 }
 
 func PipeLine(document Document) {
-	second(verify(document))
+	verify(document)
 }
 
 func verify(doc Document) <-chan Document {
@@ -62,11 +71,5 @@ func verify(doc Document) <-chan Document {
 	var value interface{}
 	cas, _ := myBucket.Get(doc.Id, &value)
 	fmt.Printf("Got value `%+v` with CAS `%08x`\n", value, cas)
-	return out
-}
-
-func second(in chan Document) <-chan Document {
-	out := make(chan Document)
-	<-in
 	return out
 }
