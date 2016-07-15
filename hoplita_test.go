@@ -12,7 +12,6 @@ import (
 var income = make(chan Document)
 
 func TestWhether_correct_parameters_should_return_accepted(t *testing.T) {
-
 	//in order to offer a reception to income
 	go func() { <-income }()
 

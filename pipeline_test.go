@@ -5,33 +5,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type Context struct {
+type Channels struct {
 	cdoc chan Document
 	cerr chan error
 }
 
-func newContext(cdoc chan Document, cerr chan error) Context {
-	var out Context
+func newContext(cdoc chan Document, cerr chan error) Channels {
+	var out Channels
 	out.cdoc = cdoc
 	out.cerr = cerr
 	return out
 }
 
 
-func sourceCanceled(in chan Document) Context {
+func sourceCanceled(in chan Document) Channels {
 	cancel := make(chan error)
 	close(cancel)
 	//done <- "" // this provokes a panic in runtime
 	return newContext(in, cancel)
 }
 
-func sourceOk() Context {
+func sourceOk() Channels {
 	err := make(chan error)
 	in := make(chan Document)
 	return newContext(in, err)
 }
 
-func mapper(context Context, handler func(Document) chan Document) Context {
+func mapper(context Channels, handler func(Document) chan Document) Channels {
 	select {
 	case <-context.cerr:
 		return context
