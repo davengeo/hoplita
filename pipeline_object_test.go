@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,12 +13,17 @@ func newChannels(cdoc chan Document, cerr chan error) Channels {
 	return out
 }
 
-func (c Channels) mapper2(handler func(Document) chan Document) Channels {
+func (c Channels) mapper2(handler func(Document) Document) Channels {
 	select {
 	case <-c.cerr:
 		return c
 	case doc:=<-c.cdoc:
-		return newChannels(handler(doc), c.cerr)
+		out:=make(chan Document)
+		go func() {
+			newDoc:=handler(doc)
+			out<-newDoc
+		}()
+		return newChannels(out, c.cerr)
 	}
 }
 
@@ -44,23 +48,18 @@ func TestCreationChannels(t *testing.T) {
 	go func() { context.cdoc<-doc }()
 
 	context.
-		mapper2(func(doc Document) chan Document {
-			out:=make(chan Document)
+		mapper2(func(doc Document) Document {
 			doc.Id+="hi2"
-			go func() { out<-doc }()
-			return out
+			return doc
 		}).
-		mapper2(func(doc Document) chan Document {
-			out:=make(chan Document)
+		mapper2(func(doc Document) Document {
 			doc.Id+="hi3"
-			go func() { out<-doc }()
-			return out
+			return doc
 		}).
 		resolve(func(doc Document) {
 			t.Log("passed with value:"+doc.Id)
 			assert.Equal(t, "hihi2hi3", doc.Id)
 		}, func(err error) {
-			fmt.Println(err)
 			t.Fail()
 		})
 
