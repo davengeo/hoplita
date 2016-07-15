@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-	_ "github.com/stretchr/testify/assert"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 )
