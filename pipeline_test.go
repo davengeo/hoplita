@@ -2,48 +2,60 @@ package main
 
 import "testing"
 
-func first(in chan Document) (chan Document, chan string) {
-	done := make(chan string)
-	close(done)
-	//done <- "" // this provokes a panic in runtime
-	return in, done
+type Context struct {
+	cdoc chan Document
+	cerr chan error
 }
 
-func second(in chan Document, done chan string, handler chan Document) (chan Document, chan string) {
+func newContext(cdoc chan Document, cerr chan error) *Context {
+	out:= new(Context)
+	out.cdoc = cdoc
+	out.cerr = cerr
+	return out
+}
+
+func first(in chan Document) *Context {
+	done := make(chan error)
+	close(done)
+	//done <- "" // this provokes a panic in runtime
+	return newContext(in, done)
+}
+
+func second(context *Context, handler chan Document) *Context {
 	select {
-	case <-done:
-		return in, done
-	case <-in:
-		return handler, done
+	case <-context.cerr:
+		return context
+	case <-context.cdoc:
+		return newContext(handler, context.cerr)
 	}
 }
 
 func TestPipeLine(t *testing.T) {
-	in, err := first(income)
+	context := first(income)
 	select {
-	case <-err:
+	case <-context.cerr:
 		t.Log("passed by case <-err:\n")
-	case <-in:
+	case <-context.cdoc:
 		t.Fail()
 	}
 }
 
 
 func TestSecondPipeLine(t *testing.T) {
-	in, done := first(income)
+	context := first(income)
 
-	sec, er2 := second(in, done, func() chan Document {
-		return in
+	context2 := second(context, func() chan Document {
+		return context.cdoc
 	}())
 
-	third, er3 := second(sec, er2, func() chan Document {
-		return in
+	context3 := second(context2, func() chan Document {
+		return context2.cdoc
 	}())
 
 	select {
-	case <-er3:
+	case <-context3.cerr:
 		t.Log("passed by case <-err:\n")
-	case <-third:
+	case <-context.cdoc:
 		t.Fail()
 	}
 
