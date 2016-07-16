@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,7 +38,7 @@ func (c Channels) resolve(done func(Document), fail func(error)) {
 }
 
 
-func TestCreationChannels(t *testing.T) {
+func TestCreationChannelsHappy(t *testing.T) {
 	err := make(chan error)
 	in := make(chan Document)
 	context := newChannels(in, err)
@@ -62,5 +63,37 @@ func TestCreationChannels(t *testing.T) {
 		}, func(err error) {
 			t.Fail()
 		})
+
+}
+
+func TestCreationChannelsCanceled(t *testing.T) {
+	err := make(chan error)
+	in := make(chan Document)
+	context := newChannels(in, err)
+
+	var doc Document
+	doc.Id = "hi"
+
+	go func() { context.cdoc<-doc }()
+
+	context.
+	mapper2(func(doc Document) Document {
+		doc.Id+="hi2"
+		er := errors.New("error")
+		context.cerr<-er
+		//cancellation
+		close(context.cerr)
+		return doc
+	}).
+	mapper2(func(doc Document) Document {
+		doc.Id+="hi3"
+		return doc
+	}).
+	resolve(func(doc Document) {
+		t.Log("passed with value:"+doc.Id)
+		t.Fail()
+	}, func(err error) {
+		t.Log("passed with error")
+	})
 
 }
